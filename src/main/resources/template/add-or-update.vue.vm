@@ -3,7 +3,7 @@
     :title="!dataForm.id ? '新增' : '修改'"
     :close-on-click-modal="false"
     :visible.sync="visible">
-    <el-form :model="dataForm" :rules="dataRule" ref="dataForm" @keyup.enter.native="dataFormSubmit()" label-width="80px">
+    <el-form :model="dataForm" :rules="dataRule" label-position="left" ref="dataForm" @keyup.enter.native="dataFormSubmit()" label-width="80px">
 #foreach($column in $columns)
 #if($column.columnName != $pk.columnName)
     <el-form-item label="${column.comments}" prop="${column.attrname}">
@@ -58,7 +58,7 @@
               method: 'get',
               #[[params: this.$http.adornParams()]]#
             }).then(({data}) => {
-              if (data && data.code === 0) {
+              if (data && data.code === 1) {
 #foreach($column in $columns)
 #if($column.columnName != $pk.columnName)
                 this.dataForm.${column.attrname} = data.${pathName}.${column.attrname}
@@ -87,7 +87,7 @@
 #end
               })
             }).then(({data}) => {
-              if (data && data.code === 0) {
+              if (data && data.code === 1) {
                 #[[this.$message({]]#
                   message: '操作成功',
                   type: 'success',
