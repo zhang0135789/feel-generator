@@ -12,7 +12,7 @@
 
 
     <select id="selectListByMap" resultMap="${classname}Map">
-        select * from db_${classname}
+        select * from ${tableName}
         <where>
         #foreach($column in $columns)
         <if test="${column.attrname} != null" >
@@ -26,7 +26,7 @@
 
 
     <select id="selectCounts" resultType="java.lang.Integer">
-        select count(1) from db_${classname}
+        select count(1) from ${tableName}
     </select>
 
 
