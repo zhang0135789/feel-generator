@@ -19,10 +19,8 @@ import javax.annotation.Resource;
 @Service("${classname}Service")
 public class ${className}ServiceImpl extends ServiceImpl<${className}Dao, ${className}Entity> implements ${className}Service {
 
-
     @Resource
     private ${className}Dao ${classname}Dao;
-
 
     @Override
     public PageUtils selectListPage(Map<String, Object> params) {

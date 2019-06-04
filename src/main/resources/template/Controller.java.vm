@@ -28,6 +28,7 @@ import ${mainPath}.common.utils.R;
 @RestController
 @RequestMapping("${moduleName}/${pathName}")
 public class ${className}Controller {
+
     @Autowired
     private ${className}Service ${classname}Service;
 
@@ -41,7 +42,6 @@ public class ${className}Controller {
 
         return R.ok().put("page", page);
     }
-
 
     /**
      * 信息
