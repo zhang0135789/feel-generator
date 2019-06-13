@@ -33,4 +33,5 @@ public class ${className}Entity implements Serializable {
 private $column.attrType $column.attrname;
 #end
 
+	public ${className}Entity() {}
 }

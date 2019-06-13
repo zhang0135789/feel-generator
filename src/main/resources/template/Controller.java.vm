@@ -71,6 +71,7 @@ public class ${className}Controller {
     @RequestMapping("/update")
     @RequiresPermissions("${moduleName}:${pathName}:update")
     public R update(@RequestBody ${className}Entity ${classname}){
+        ValidatorUtils.validateEntity(${classname});
 		${classname}Service.updateById(${classname});
 
         return R.ok();
