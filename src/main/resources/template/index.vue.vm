@@ -1,138 +1,209 @@
 <template>
-  <div class="mod-config">
-    <el-form :inline="true" :model="dataForm" @keyup.enter.native="getDataList()">
-      <el-form-item>
-        <el-input v-model="dataForm.key" placeholder="参数名" clearable></el-input>
-      </el-form-item>
-      <el-form-item>
-        <el-button @click="getDataList()">查询</el-button>
-        <el-button v-if="isAuth('${moduleName}:${pathName}:save')" type="primary" @click="addOrUpdateHandle()">新增</el-button>
-        <el-button v-if="isAuth('${moduleName}:${pathName}:delete')" type="danger" @click="deleteHandle()" :disabled="dataListSelections.length <= 0">批量删除</el-button>
-      </el-form-item>
-    </el-form>
-    <el-table :data="dataList" border v-loading="dataListLoading" @selection-change="selectionChangeHandle" style="width: 100%;">
-      <el-table-column type="selection" header-align="center" align="center" width="50"> </el-table-column>
+  <div class="app-container">
+    <!--表单搜索start-->
+    <el-card class="box-bar-search-card">
+      <el-form :inline="true" :model="queryForm" label-width="0" @submit.native.prevent>
+        <el-form-item>
+          <el-button type="primary" icon="el-icon-plus" @click="dialogVisible = true">新增</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-input v-model="queryForm.name" placeholder="名称" clearable />
+        </el-form-item>
+        <el-form-item class="fr">
+          <el-button type="primary" native-type="submit" @click="queryData('search')">查询</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+    <!--表单搜索end-->
+    <div class="search-result-box">
+      <!--数据列表start-->
+      <el-table :data="tableData" border>
+        <el-table-column :index="indexMethod" label="#" type="index" width="80" align="center" />
 #foreach($column in $columns)
-        <el-table-column  prop="${column.attrname}"  header-align="center"  align="center"  label="${column.comments}">
+        <el-table-column  prop="${column.attrname}"  align="center"  label="${column.comments}">
         </el-table-column>
 #end
-      <el-table-column fixed="right" header-align="center" align="center" width="150" label="操作">
-        <template slot-scope="scope">
-          <el-button type="text" size="small" @click="addOrUpdateHandle(scope.row.${pk.attrname})">修改</el-button>
-          <el-button type="text" size="small" @click="deleteHandle(scope.row.${pk.attrname})">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <el-pagination  @size-change="sizeChangeHandle"  @current-change="currentChangeHandle"
-      :current-page="pageIndex"
-      :page-sizes="[10, 20, 50, 100]"
-      :page-size="pageSize"
-      :total="totalPage"
-      layout="total, sizes, prev, pager, next, jumper">
-    </el-pagination>
-    <!-- 弹窗, 新增 / 修改 -->
-    <add-or-update v-if="addOrUpdateVisible" ref="addOrUpdate" @refreshDataList="getDataList"></add-or-update>
+        <el-table-column label="操作" align="center" width="130">
+          <template slot-scope="scope">
+            <el-tooltip content="编辑" placement="top">
+              <el-button icon="el-icon-edit" type="primary" plain @click="editHandle(scope.row)" />
+            </el-tooltip>
+            <el-tooltip content="删除" placement="top">
+              <el-button icon="el-icon-delete" type="danger" plain @click="deleteHandle(scope.row)" />
+            </el-tooltip>
+          </template>
+        </el-table-column>
+      </el-table>
+      <!--数据列表end-->
+      <!--分页开始-->
+      <Pagination :total="total" :page.sync="pageQuery.pageIndex" :limit.sync="pageQuery.pageSize" @pagination="pageChange" />
+      <!--分页结束-->
+    </div>
+    <!--新增/编辑 商品分类表单 start-->
+    <el-dialog v-if="dialogVisible" :visible.sync="dialogVisible" :before-close="handleClose" :title=" ${className}EditFlag ? '编辑': '新增'" width="50%">
+      <div>
+        <el-form ref="${className}Form" :model="${className}Form" :rules="${className}Rules" label-width="120px">
+
+#foreach($column in $columns)
+        <el-form-item label="${column.comments}:" prop="${column.attrname}" >
+          <el-input v-model="${className}Form.${column.attrname}" placeholder="请输入${column.comments}" />
+        </el-form-item>
+#end
+        </el-form>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="handleClose">取 消</el-button>
+        <el-button v-if="${className}EditFlag" type="primary" @click="submitForm('${className}Form')">保 存</el-button>
+        <el-button v-else type="primary" @click="submitForm('${className}Form')">确 定</el-button>
+      </span>
+    </el-dialog>
+    <!--新增/编辑 商品分类表单 end-->
   </div>
 </template>
 
 <script>
-  import AddOrUpdate from './${pathName}-add-or-update'
+  import { fetchAttribute, addAttribute, updateAttribute, deleteAttribute } from '@/api/goods/goods'
+
   export default {
-    data () {
+    name: '${className}',
+    components: {},
+    data() {
       return {
-        dataForm: {
-          key: ''
+        dialogVisible: false,
+        ${className}EditFlag: false,
+        queryForm: {
+          name: ''
         },
-        dataList: [],
-        pageIndex: 1,
-        pageSize: 10,
-        totalPage: 0,
-        dataListLoading: false,
-        dataListSelections: [],
-        addOrUpdateVisible: false
+        date: ['', ''],
+        pageQuery: {
+          pageSize: 20,
+          pageIndex: 1
+        },
+        total: 0,
+        ${className}Form: {
+          value: '',
+          keyword: '',
+          name: ''
+        },
+        ${className}Rules: {
+        #foreach($column in $columns)
+          ${column.attrname}: [{ required: true, message: '请输入${column.comments}', trigger: 'blur' }],
+        #end
+        },
+        tableData: []
       }
     },
-    components: {
-      AddOrUpdate
-    },
-    activated () {
-      this.getDataList()
+    created() {
+      this.initTableData()
     },
     methods: {
-      // 获取数据列表
-      getDataList () {
-        this.dataListLoading = true
-        #[[this.$http({]]#
-          #[[url: this.$http.adornUrl]]#('/${moduleName}/${pathName}/list'),
-          method: 'get',
-          #[[params: this.$http.adornParams({]]#
-            'page': this.pageIndex,
-            'limit': this.pageSize,
-            'key': this.dataForm.key
-          })
-        }).then(({data}) => {
-          if (data && data.code === 1) {
-            this.dataList = data.page.list
-            this.totalPage = data.page.totalCount
-          } else {
-            this.dataList = []
-            this.totalPage = 0
-          }
-          this.dataListLoading = false
-        })
+      /*
+      * 编辑菜单
+      * */
+      editHandle(row) {
+        this.tmp${className}Form = this.${className}Form
+        this.${className}Form = Object.assign({}, row)
+        this.dialogVisible = true
+        this.${className}EditFlag = true
       },
-      // 每页数
-      sizeChangeHandle (val) {
-        this.pageSize = val
-        this.pageIndex = 1
-        this.getDataList()
-      },
-      // 当前页
-      currentChangeHandle (val) {
-        this.pageIndex = val
-        this.getDataList()
-      },
-      // 多选
-      selectionChangeHandle (val) {
-        this.dataListSelections = val
-      },
-      // 新增 / 修改
-      addOrUpdateHandle (id) {
-        this.addOrUpdateVisible = true
-        #[[this.$nextTick(() => {]]#
-          this.$refs.addOrUpdate.init(id)
-        })
-      },
-      // 删除
-      deleteHandle (id) {
-        var ids = id ? [id] : this.dataListSelections.map(item => {
-          return item.${pk.attrname}
-        })
-        #[[this.$confirm(`确定对[id=${ids.join(',')}]进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {]]#
+      deleteHandle(row) {
+        console.log(row)
+        const id = row.id
+        this.$confirm('此操作将删除当前分类，是否继续？', '温馨提示', {
           confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
+          cancelButtonText: '取消'
         }).then(() => {
-          #[[this.$http({]]#
-            url: #[[this.$http.adornUrl]]#('/${moduleName}/${pathName}/delete'),
-            method: 'post',
-            data: this.$http.adornData(ids, false)
-          }).then(({data}) => {
-            if (data && data.code === 1) {
-              #[[this.$message({]]#
-                message: '操作成功',
-                type: 'success',
-                duration: 1500,
-                onClose: () => {
-                  this.getDataList()
-                }
-              })
-            } else {
-              #[[this.$message.error(data.msg)]]#
-            }
+          deleteAttribute(id).then(res => {
+            this.$notify({
+              title: '成功',
+              message: '删除分类成功',
+              type: 'success'
+            })
+            this.queryData()
           })
         })
+      },
+      /*
+     * dialog 关闭回调函数
+     * */
+      handleClose() {
+        if (this.${className}EditFlag) {
+          this.${className}Form = this.tmpCategoryForm
+          this.${className}EditFlag = false
+        }
+        this.dialogVisible = false
+        this.resetForm('${className}Form')
+      },
+      indexMethod(index) {
+        return (this.pageQuery.pageIndex - 1) * this.pageQuery.pageSize + index + 1
+      },
+      queryData(type) {
+        const queryParams = this.$queryParams.eq('test', this.queryForm.test).getParams()
+                const query = Object.assign({}, this.pageQuery, queryParams)
+        fetchAttribute(query).then(res => {
+          this.tableData = res.data.records
+          this.total = res.data.total
+        })
+      },
+      initTableData() {
+        fetchAttribute().then(res => {
+          this.tableData = res.data.records
+          this.total = res.data.total
+        })
+      },
+      /*
+          * 提交表单搜索提交
+          * */
+      submitForm(formName) {
+        this.$refs[formName].validate((valid) => {
+      if (valid) {
+      if (this.${className}EditFlag) {
+      updateAttribute(this.${className}Form).then(res => {
+      this.$message({
+      type: 'success',
+      message: '编辑商品分类成功',
+      showClose: true
+      })
+      this.queryData()
+      this.handleClose()
+      })
+      } else {
+      addAttribute(this.${className}Form).then(res => {
+      this.$message({
+      type: 'success',
+      message: '新增商品分类成功',
+      showClose: true
+      })
+      this.queryData()
+      this.handleClose()
+      })
+      }
+      } else {
+      console.log('error submit!!')
+      return false
+      }
+      })
+      },
+      /*
+          * 页码改变回调函数
+          * @params page 页码
+          * @params limit 每页限制的数量
+          * */
+      pageChange({ page, limit }) {
+        this.pageQuery.pageNo = page
+        this.pageQuery.pageSize = limit
+        this.queryData()
+      },
+      /**
+       * 重置表单内容
+       * */
+      resetForm(formName) {
+        this.$refs[formName].resetFields()
       }
     }
   }
 </script>
+
+<style scoped>
+
+</style>
