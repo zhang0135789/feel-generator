@@ -17,9 +17,9 @@
 		select dt.table_name tableName,
 		dtc.comments tableComment,
 		uo.created createTime
-		from user_tables dt,
-		user_tab_comments dtc,
-		user_objects uo
+		from all_tables dt,
+		all_tab_comments dtc,
+		all_objects uo
 		where dt.table_name = dtc.table_name and dt.table_name = uo.object_name and uo.object_type='TABLE'
 		<if test="tableName != null and tableName.trim() != ''">
 			and dt.table_name like concat('%', UPPER(#{tableName}))
@@ -28,7 +28,7 @@
 	</select>
 
 	<select id="queryTable" resultMap="tableMap">
-		select dt.table_name tableName,dtc.comments tableComment,dt.last_analyzed createTime from user_tables dt,user_tab_comments dtc where dt.table_name=dtc.table_name and dt.table_name = UPPER(#{tableName})
+		select dt.table_name tableName,dtc.comments tableComment,dt.last_analyzed createTime from all_tables dt,all_tab_comments dtc where dt.table_name=dtc.table_name and dt.table_name = UPPER(#{tableName})
 	</select>
 
 	<select id="queryColumns" resultMap="tableMap">
@@ -45,14 +45,14 @@
         uc.constraint_type,
         -- 去重
         row_number() over (partition by col.column_name order by uc.constraint_type desc) as row_flg
-        from user_tab_columns col
-        left join user_col_comments colc
+        from all_tab_columns col
+        left join all_col_comments colc
         on colc.table_name = col.table_name
         and colc.column_name = col.column_name
-        left join user_cons_columns ucc
+        left join all_cons_columns ucc
         on ucc.table_name = col.table_name
         and ucc.column_name = col.column_name
-        left join user_constraints uc
+        left join all_constraints uc
         on uc.constraint_name = ucc.constraint_name
         where col.table_name = upper(#{tableName})
         ) temp
