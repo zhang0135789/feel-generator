@@ -40,6 +40,8 @@ public class GenUtils {
 
         templates.add("template/index.vue.vm");
         templates.add("template/add-or-update.vue.vm");
+        templates.add("template/request.js.vm");
+
 
         return templates;
     }
@@ -213,6 +215,11 @@ public class GenUtils {
         if (template.contains("add-or-update.vue.vm" )) {
             return "main" + File.separator + "resources" + File.separator + "src" + File.separator + "views" + File.separator + "modules" +
                     File.separator + moduleName + File.separator + className.toLowerCase() + "-add-or-update.vue";
+        }
+
+        if (template.contains("request.js.vm" )) {
+            return "main" + File.separator + "resources" + File.separator + "src" + File.separator + "views" + File.separator + "modules" +
+                    File.separator + moduleName + File.separator + className.toLowerCase() + "-request.js";
         }
 
         return null;
